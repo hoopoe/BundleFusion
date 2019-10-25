@@ -21,7 +21,7 @@ void CUDARayCastSDF::create(const RayCastParams& params)
 {
 	m_params = params;
 	m_data.allocate(m_params);
-	m_rayIntervalSplatting.OnD3D11CreateDevice(DXUTGetD3D11Device(), params.m_width, params.m_height);
+	//m_rayIntervalSplatting.OnD3D11CreateDevice(DXUTGetD3D11Device(), params.m_width, params.m_height);
 
 	m_rayCastIntrinsics = mat4f(
 		params.fx, 0.0f, params.mx, 0.0f,
@@ -34,7 +34,7 @@ void CUDARayCastSDF::create(const RayCastParams& params)
 void CUDARayCastSDF::destroy(void)
 {
 	m_data.free();
-	m_rayIntervalSplatting.OnD3D11DestroyDevice();
+	//m_rayIntervalSplatting.OnD3D11DestroyDevice();
 }
 
 void CUDARayCastSDF::render(const HashDataStruct& hashData, const HashParams& hashParams, const mat4f& lastRigidTransform)

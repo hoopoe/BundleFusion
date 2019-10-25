@@ -44,6 +44,15 @@
 #include <iomanip>
 
 
+//// Include GLEW
+//#include <GL/glew.h>
+//// Include GLFW
+//#include <GLFW/glfw3.h>
+//GLFWwindow* window;
+#include <GL/freeglut.h>
+GLenum doubleBuffer;
+GLubyte ubImage[65536];
+
 //--------------------------------------------------------------------------------------
 // UI control IDs
 //--------------------------------------------------------------------------------------
@@ -120,6 +129,14 @@ int startDepthSensing(OnlineBundler* bundler, RGBDSensor* sensor, CUDAImageManag
 	g_depthSensingBundler = bundler;
 	if (GlobalAppState::get().s_generateVideo) g_transformWorld = GlobalAppState::get().s_topVideoTransformWorld;
 
+	//DXUTSetCallbackD3D11DeviceCreated(OnD3D11CreateDevice);
+	//DXUTCreateDevice(D3D_FEATURE_LEVEL_11_0, true, GlobalAppState::get().s_windowWidth, GlobalAppState::get().s_windowHeight);
+	OnD3D11CreateDevice(0, 0, 0);
+	for (int i = 0; i < 1500; i++) {
+		OnD3D11FrameRender(0, 0, 0, 0, 0);
+	}
+
+	/*
 	// Set DXUT callbacks
 	DXUTSetCallbackDeviceChanging(ModifyDeviceSettings);
 	DXUTSetCallbackMsgProc(MsgProc);
@@ -140,8 +157,32 @@ int startDepthSensing(OnlineBundler* bundler, RGBDSensor* sensor, CUDAImageManag
 	DXUTSetIsInGammaCorrectMode(false);	//gamma fix (for kinect color)
 
 	DXUTCreateDevice(D3D_FEATURE_LEVEL_11_0, true, GlobalAppState::get().s_windowWidth, GlobalAppState::get().s_windowHeight);
-	DXUTMainLoop(); // Enter into the DXUT render loop
+	DXUTMainLoop(); // Enter into the DXUT render loop 
+	*/
 
+	/*GLenum type;
+
+	char *argv[1];
+	int argc = 1;
+	argv[0] = strdup("Test App");
+	glutInit(&argc, argv);
+	type = GLUT_RGB;
+
+	type |= (doubleBuffer) ? GLUT_DOUBLE : GLUT_SINGLE;
+	glutInitDisplayMode(type);
+	glutCreateWindow("ABGR extension");
+	if (!glutExtensionSupported("GL_EXT_abgr")) {
+		printf("Couldn't find abgr extension.\n");
+		exit(0);
+	}
+#if !GL_EXT_abgr
+	printf("WARNING: client-side OpenGL has no ABGR extension support!\n");
+	printf("         Drawing only RGBA (and not ABGR) images and textures.\n");
+#endif
+	Init();
+	glutKeyboardFunc(Key);
+	glutDisplayFunc(Draw);
+	glutMainLoop();*/
 
 	return DXUTGetExitCode();
 }
@@ -583,7 +624,7 @@ HRESULT CALLBACK OnD3D11CreateDevice(ID3D11Device* pd3dDevice, const DXGI_SURFAC
 {
 	HRESULT hr = S_OK;
 
-	V_RETURN(GlobalAppState::get().OnD3D11CreateDevice(pd3dDevice));
+	/*V_RETURN(GlobalAppState::get().OnD3D11CreateDevice(pd3dDevice));
 
 	ID3D11DeviceContext* pd3dImmediateContext = DXUTGetD3D11DeviceContext();
 
@@ -592,7 +633,7 @@ HRESULT CALLBACK OnD3D11CreateDevice(ID3D11Device* pd3dDevice, const DXGI_SURFAC
 
 
 	V_RETURN(DX11QuadDrawer::OnD3D11CreateDevice(pd3dDevice));
-	V_RETURN(DX11PhongLighting::OnD3D11CreateDevice(pd3dDevice));
+	V_RETURN(DX11PhongLighting::OnD3D11CreateDevice(pd3dDevice));*/
 
 	TimingLogDepthSensing::init();
 
@@ -602,8 +643,8 @@ HRESULT CALLBACK OnD3D11CreateDevice(ID3D11Device* pd3dDevice, const DXGI_SURFAC
 	formats.push_back(DXGI_FORMAT_R32G32B32A32_FLOAT);
 	formats.push_back(DXGI_FORMAT_R32G32B32A32_FLOAT);
 
-	V_RETURN(g_RGBDRenderer.OnD3D11CreateDevice(pd3dDevice, GlobalAppState::get().s_rayCastWidth, GlobalAppState::get().s_rayCastHeight));
-	V_RETURN(g_CustomRenderTarget.OnD3D11CreateDevice(pd3dDevice, GlobalAppState::get().s_rayCastWidth, GlobalAppState::get().s_rayCastHeight, formats));
+	/*V_RETURN(g_RGBDRenderer.OnD3D11CreateDevice(pd3dDevice, GlobalAppState::get().s_rayCastWidth, GlobalAppState::get().s_rayCastHeight));
+	V_RETURN(g_CustomRenderTarget.OnD3D11CreateDevice(pd3dDevice, GlobalAppState::get().s_rayCastWidth, GlobalAppState::get().s_rayCastHeight, formats));*/
 
 	DirectX::XMFLOAT3 vecEye(0.0f, 0.0f, 0.0f);
 	DirectX::XMFLOAT3 vecAt(0.0f, 0.0f, 1.0f);
@@ -644,9 +685,9 @@ HRESULT CALLBACK OnD3D11CreateDevice(ID3D11Device* pd3dDevice, const DXGI_SURFAC
 
 	std::vector<DXGI_FORMAT> rtfFormat;
 	rtfFormat.push_back(DXGI_FORMAT_R8G8B8A8_UNORM); // _SRGB
-	V_RETURN(g_RenderToFileTarget.OnD3D11CreateDevice(pd3dDevice, GlobalAppState::get().s_rayCastWidth, GlobalAppState::get().s_rayCastHeight, rtfFormat));
+	//V_RETURN(g_RenderToFileTarget.OnD3D11CreateDevice(pd3dDevice, GlobalAppState::get().s_rayCastWidth, GlobalAppState::get().s_rayCastHeight, rtfFormat));
 
-	g_CudaImageManager->OnD3D11CreateDevice(pd3dDevice);
+	//g_CudaImageManager->OnD3D11CreateDevice(pd3dDevice);
 
 	if (GlobalAppState::get().s_sensorIdx == 7) { // structure sensor
 		g_depthSensingRGBDSensor->startReceivingFrames();
@@ -1066,7 +1107,7 @@ void CALLBACK OnD3D11FrameRender(ID3D11Device* pd3dDevice, ID3D11DeviceContext* 
 	///////////////////////////////////////
 	if (GlobalBundlingState::get().s_enableGlobalTimings) { t.start(); } // just sync-ed //{ GlobalAppState::get().WaitForGPU(); cudaDeviceSynchronize(); t.start(); }
 	bool trackingLost = bGotDepth && (!validTransform || bGlobalTrackingLost); //tracking lost when local frame has tracking lost or global frame has tracking lost
-	visualizeFrame(pd3dImmediateContext, pd3dDevice, g_transformWorld * g_lastRigidTransform, trackingLost);
+	//visualizeFrame(pd3dImmediateContext, pd3dDevice, g_transformWorld * g_lastRigidTransform, trackingLost);
 	if (GlobalBundlingState::get().s_enableGlobalTimings) { GlobalAppState::get().WaitForGPU(); cudaDeviceSynchronize(); t.stop(); TimingLog::getFrameTiming(true).timeVisualize = t.getElapsedTimeMS(); }
 
 
